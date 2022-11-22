@@ -215,7 +215,6 @@ const Home = ({correoUsuario}) => {
                         <button className='btn btn-danger' onClick={()=>deleteUsuario(list.id)}>
                           Eliminar
                         </button>
-                        
                       </div>
                     </div>
                   </div>
