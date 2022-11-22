@@ -1,0 +1,13 @@
+.tamaño-imagen{
+  width: 100%;
+  height: 50%;
+}
+
+.color-text {
+  color: tomato;
+  font-size: 70px;
+}
+
+a {
+  color: #41464b !important;
+}
