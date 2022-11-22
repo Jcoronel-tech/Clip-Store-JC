@@ -215,6 +215,9 @@ const Home = ({correoUsuario}) => {
                         <button className='btn btn-danger' onClick={()=>deleteUsuario(list.id)}>
                           Eliminar
                         </button>
+                        <button className='btn btn-warning m-1'onClick={()=>setSubId(list.id)} >
+                          Actualiza
+                        </button>
                       </div>
                     </div>
                   </div>
