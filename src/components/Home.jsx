@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react'
 import { Link } from "react-router-dom";
 import Heart from "../components/Heart";
 import perfil from '../images/perfil.gif'
-import firebaseApp from '../credenciales'
+import {firebaseApp} from '../credenciales'
 import {getAuth, signOut} from 'firebase/auth'
 import {getFirestore, collection, addDoc, getDocs, doc, deleteDoc, getDoc, setDoc} from 'firebase/firestore'
+import { async } from '@firebase/util';
 
 
 const auth = getAuth(firebaseApp)
@@ -12,93 +13,76 @@ const db = getFirestore(firebaseApp)
 
 
 const Home = ({correoUsuario}) => {
-
+/* 
     const valorInicial = {
         titulo:'',
         descripcion: '',
         imagen:'',
-    }
+    } */
 
-    //Variables par los estados
-    const [user, setUser] = useState(valorInicial)
-    const [lista, setLista] = useState([])
-    const [subId, setSubId] = useState('')
+
+    const [subId, setSubId] = useState()
     const [photos, setPhotos ] = useState([]);
- 
-    const capturarInputs = (e)=>{
-        const {name, value} = e.target
-        setUser({...user, [name]: value})
-    }
+    const [archivoUrl, setArchivoUrl] = React.useState("");
+    const [docus,setDocus] = React.useState([]);
+    const [filterDatos, setfilterDatos] = useState("");
+
 
     const addLike = (id) => {
       const index = photos.findIndex((e) => e.id === id);
       photos[index].liked = !photos[index].liked
       setPhotos([...photos]);
       }
+    const archivoHandler = async (e)=> {
 
+      const archivo = e.target.files[0];
+      const storageRef = firebaseApp.storage().ref();
+      const archivoPath = storageRef.child(archivo.name);
+      await archivoPath.put(archivo);
+      console.log("archivo cargado:",archivo.name);
+      const enlaceUrl = await archivoPath.getDownloadURL();
+      setArchivoUrl(enlaceUrl);
+  
+    }
     // funcion para guardar o actualizar 
     
     const guardarInfo = async(e)=>{
         e.preventDefault()
-        // console.log(user);
-        // si es vacio entonces guardamos
-        if(subId === ''){
-            try {
-                await addDoc(collection(db,'user'),{
-                    ...user
-                })
-            } catch (error) {
-                console.log(error);
-            }
-        }
-        else{
-            await setDoc(doc(db, 'user', subId),{
-                ...user
-            })
-        }
-        setUser({...valorInicial})
-        setSubId('')
-    }
+        const nombreArchivo = e.target.nombre.value;
+        const descripcion = e.target.descripcion.value;
 
+        const coleccionRef =  firebaseApp.firestore().collection("archivos");
+        await coleccionRef.doc(nombreArchivo).set({nombre: nombreArchivo, descripcion: descripcion, url: archivoUrl});
+        console.log("archivo cargado:", nombreArchivo, descripcion, "ulr:", archivoUrl);              
+
+
+    }
+    //Metodo de filtrado
+    let orderFilter = (e)=>{
+      let listUpdate
+      if ((e.target.value === "")){
+        setDocus(docus);
+      }
+      else if ((e.target.value) === "az"){
+          listUpdate=[...docus].sort((a,b)=>a.nombre > b.nombre ? 1 : -1,);
+          setDocus(listUpdate);
+      }
+      else if ((e.target.value) === "za"){
+          listUpdate=[...docus].sort((a,b)=>a.nombre > b.nombre ? -1 : 1,);
+          setDocus(listUpdate);
+      }
+  }
+
+  const deleteUsuario = async (id) => {
+    const colRef = collection(db, "archivos");
+    await deleteDoc(doc(colRef, id));
+  };
     // funcion para renderizar la lista de usuarios
-    useEffect(()=>{
-        const getLista = async()=>{
-            try {
-                const querySnapshot = await getDocs(collection(db,'user'))
-                const docs = []
-                querySnapshot.forEach((doc)=>{
-                    docs.push({...doc.data(), id: doc.id})
-                })
-                setLista(docs)
-            } catch (error) {
-                console.log(error);
-            }
-        }
-        getLista();
-    },[lista])
+    useEffect( async()=>{
+      const docusList = await firebaseApp.firestore().collection("archivos").get();
+      setDocus(docusList.docs.map((doc)=> doc.data()));
+    },[])
 
-    // funcion para eliminar documentos
-    const deleteUsuario = async(id)=>{
-        await deleteDoc(doc(db, "user", id))
-    }
-
-    // las funciones para pedir un solo documento y luego almacenar
-
-    const getOne = async(id) =>{
-        try {
-            const docRef = doc(db, 'user', id)
-            const docSnap = await getDoc(docRef)
-            setUser(docSnap.data())
-        } catch (error) {
-            console.log(error);
-        }
-    }
-
-    useEffect(()=>{
-        if(subId !== ''){
-            getOne(subId)
-        }
-    },[subId])
 
     return (
       <div className="container ">
@@ -136,11 +120,12 @@ const Home = ({correoUsuario}) => {
         {/* cuerpo de la app  */}
         <div className='row'>
             <div className="col-12 text-center">
-              <h2 >Mi Perfil</h2>
-              <h4>
-                <img src={perfil} alt="" width="50" height="50"/>
-                <strong>{correoUsuario}</strong>{" "}
-              </h4>
+            <img src={perfil} alt="" width="50" height="50"/>
+              <h2 >Bienvenido <strong>{correoUsuario}</strong></h2>
+              <h4>Crea y gestiona tus compras de forma facil, rapida y segura.</h4>
+
+              <div>
+              </div>
             </div>
         </div>
         <div className="row">
@@ -153,11 +138,9 @@ const Home = ({correoUsuario}) => {
                 <div className="form-group">
                   <input
                     type="text"
-                    name="titulo"
+                    name="nombre"
                     className="form-control"
                     placeholder="Agregr Titulo"
-                    onChange={capturarInputs}
-                    value={user.titulo}
                   />
                 </div>
 
@@ -169,8 +152,6 @@ const Home = ({correoUsuario}) => {
                     name="descripcion"
                     className="form-control my-2"
                     placeholder="Agregar Descripción"
-                    onChange={capturarInputs}
-                    value={user.descripcion}
                   />
                 </div>
 
@@ -179,11 +160,10 @@ const Home = ({correoUsuario}) => {
                   <input
                     type="file"
                     id="formFile"
-                    name="imagen"
+                    name="url"
                     className="form-control mt-2 mb-3 form-control"
                     placeholder="Selecionar Imagen"
-                    onChange={capturarInputs}
-                    value={user.imagen}
+                    onChange={archivoHandler}
                   />
                 </div>
                 <button className='btn btn-secondary'>
@@ -194,30 +174,36 @@ const Home = ({correoUsuario}) => {
           </div>
           <div className="col-12 col-lg-6">
               <h2 className='text-center mt-5 mb-3'>Publicaciones</h2>
-              <select className="form-select m-2 w-100 w-md-25" aria-label="Default select example">
+              <select className="form-select m-2 w-100 w-md-25" aria-label="Default select example" onChange={orderFilter}>
                 <option value={-1}>Ordena por:</option>
                 <option value="az">A - Z</option>
                 <option value="za">Z - A</option>
             </select>
               <div className='row'>
-                {
-                lista.map(list => (
-                  <div key={list.id} className="card m-3 p-4 col-12 col-lg-5">
+                  {
+                    docus.filter((dato)=> {
+                      if(!filterDatos){
+                      return dato;
+                      }
+                      else if ((dato.nombre).toLocaleLowerCase())
+                      {
+                      return dato;
+                      }
+                      else{
+                          console.log("sinFiltro");
+                      }
+                      }).map(list => (
+                  <div key={list.id} className="card m-3 col-12 col-lg-5">
                     {/* cuerpo de la app  */}
                     
-                    <p onClick={()=>addLike(list.id)}>{list.imagen}
-                    <Heart filled={list.liked}/>
-                    </p>
+                    <img src={list.url} alt="img" />
                     <div className='card-body'>
-                      <h5 className='card-title'>{list.titulo}</h5>
+                      <h5 className='card-title'>{list.nombre}</h5>
                       <p className='card-text'>{list.descripcion}</p>
-                      <div>
+                      <div className='d-flex flex-column'>
                         <button className='btn btn-danger' onClick={()=>deleteUsuario(list.id)}>
                           Eliminar
-                        </button>
-                        <button className='btn btn-warning m-1'onClick={()=>setSubId(list.id)} >
-                          Actualiza
-                        </button>
+                        </button> 
                       </div>
                     </div>
                   </div>

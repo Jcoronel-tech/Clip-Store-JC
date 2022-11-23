@@ -4,8 +4,8 @@ import Dos from '../images/baner2.jpg'
 import Tres from '../images/baner3.jpg'
 import '../App.css';
 
+import {firebaseApp} from "../credenciales"
 
-import firebaseApp from '../credenciales'
 import {getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} from 'firebase/auth'
 const auth = getAuth(firebaseApp)
 
