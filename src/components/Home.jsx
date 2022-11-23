@@ -167,7 +167,7 @@ const Home = ({correoUsuario}) => {
                   />
                 </div>
                 <button className='btn btn-secondary'>
-                    {subId === '' ? 'Actualizar' : 'Guardar'}
+                    {subId === '' ? 'Guardar' : 'Actualizar'}
                 </button>
               </div>
             </form>
